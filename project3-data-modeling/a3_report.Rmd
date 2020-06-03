@@ -1,0 +1,164 @@
+---
+title: "A3 Report"
+author: "Zico Deng, Yasmine Hejazi, Kari Nasu"
+date: "2/13/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction    
+This study will extend the study, titled, _[Many analysts, one dataset: Making transparent how variations in analytical choices affect results](https://osf.io/gvm2z/)_. In this study, multiple research teams assessed the same research question with the same data. We too will conduct this study, but will assess two research questions:     
+    1. Are soccer referees more likely to give red cards to dark skin toned players than light skin toned players?     
+    2. Are soccer referees from countries high in skin-tone prejudice more likely to award red cards to dark skin toned players?      
+    
+## Exploratory Data Analysis  
+### Data Overview    
+The data used in this study was acquired from the Open Science Framework [website](https://osf.io/fv8c3/). Included in the data are multiple variables concerning soccer player and referee interactions in the first male divisions of England, Germany, France, and Spain in the 2012-2013 season. The data is organized into player-referee dyads, where there are 2053 players and 3147 referees.    
+        
+The focus of this study, is the effect of skin tone and the issuing of red cards to players by referees. Skin tone of each player (with a provided photo) was determined by two independent raters who were unfamiliar with the research question. They rated player skin tone on a 5-point scale, which ranged from "very light skin" to "very dark skin". 
+
+Variables of interest we used from the overall dataset include:
+
+* player - player name
+
+* games - number of games in the player-referee dyad
+
+* redCards - number of red cards player received from referee
+
+* rater1 - skin rating of photo by rater 1 (5-point scale ranging from “very light skin” to “very dark skin”)
+
+* rater2 - skin rating of photo by rater 2 (5-point scale ranging from “very light skin” to “very dark skin”)
+
+* refCountry - unique referee country ID number (country name removed for anonymizing purposes)
+
+* meanIAT - mean implicit bias score (using the race IAT) for referee country, higher values correspond to faster white | good, black | bad associations
+
+* meanExp - mean explicit bias score (using a racial thermometer task) for referee country, higher values correspond to greater feelings of warmth toward whites versus blacks
+
+
+When looking at the distribution of skin tone ratings between the two independent raters, we can observe that Rater 2 tends to have more skin tone ratings that fall more towards the darker end, relative to Rater 1. There are also significantly lower counts of players with darker skin as opposed to lighter skin, shown in the distribution below.
+
+<!-- ### Compare results of two different raters. Are the rating results accurate and fair?     -->
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+source("a3_analysis.R")
+ggplot(data = data, aes(x = rater1)) +
+  geom_histogram(binwidth = 0.1) +
+  theme_bw() +
+  labs(y = "Count", x = "Skin Tone Rating") + ggtitle("Rater 1")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(data = data, aes(x = rater2)) +
+  geom_histogram(binwidth = 0.1) +
+  theme_bw() +
+  labs(y="Count", x = "Skin Tone Rating") + ggtitle("Rater 2")
+```
+
+In comparing the total number of red cards for each skin rating, we see that the trends of each rater and the number of ratings per skin tone generally match the trends of total red cards for that skin tone.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot() + 
+  geom_line(data = rater1.skin.cards, aes(x = rater1, y = totalRedCards), color = "red") +
+  geom_line(data = rater2.skin.cards, aes(x = rater2, y = totalRedCards), color = "blue") +
+  xlab('Skin Tone Rating') +
+  ylab('Total Received Red Cards') +
+  scale_colour_manual("", 
+                      breaks = c("Rater 1", "Rater 2"),
+                      values = c("red", "blue"))
+```
+
+We may also consider the red card distribution between player and referee. The number of red cards received by a referee has a maximum of 2. There is a huge difference between the number of player-referee diads where a red card wasn't received and that where one was; the majority of diads report not receiving a red card. This makes sense when considering the rarity of players receiving a rare card in soccer. The number of red cards per player is explored in Model 1 of this report.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(data = data, aes(x = redCards)) +
+  geom_histogram(binwidth = 0.5) +
+  theme_bw()
+```
+
+## Data Preparation
+In order to assess the two research questions above, we need to tranform our data to perform our analysis. Two different data transformation processes are performed to account for the two research questions we assess.
+
+Before focusing on a specific research question, the first issue we address is the presence of two skin tone ratings. We think it was appropriate to use a mean of the two ratings as our representation of the players' skin tone. This, of course, is an approximation and can be easily more reliable with a larger number of rater data.
+
+### Model 1 Preparation
+We prepare our data to fit our first model, which answers the question _Are soccer referees more likely to give red cards to dark skin toned players than light skin toned players?_ Our select data is each soccer player, their skin rating, and the number of red cards they have received in the 2012-2013 season. We therefore deviate from the referee-player diad data and total the number of red cards, then join a column of the skin tone of each player to have all data gathered. We perform model analysis, where we fit, store, and summarize the linear model using a Poisson regression, which is further explained in the statistical modelling portion of this report. Then, we calculate the predicted values calling ``   predict()  `` and store it as another variable in our table.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(knitr)
+kable(data1[1:15, ], caption = "Prepared Data for Model 1")
+```
+
+### Model 2 Preparation
+Data preparation is also done to assess our second research question, _Are soccer referees from countries high in skin-tone prejudice more likely to award red cards to dark skin toned players?_ In order to answer our second research question, we use bias as a covariate to skin rating to account for skintone prejudice. We fist word to consider our definition of bias.
+
+Our selection of variables include: referee country, skin rating, red cards, mean implicit bias score (meanIAT) for country, and mean explicit bias score (meanExp) for country. The overall bias score is calculated by summing meanExp and meanIAT of each unique country and calculating the mean of this sum. We use this value as an evaluation of prejudice in our model. Note that meanExp could be positive while meanIAT could be negative, which indicates that people in a country could be biased on skintone implicitly but not explicitly. 
+
+The same model analysis from above is used; fitting and storing the linear model using Poisson regression and calculating the predicted variables is done and stored in the table used for our analysis.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(knitr)
+kable(data2.transformed[1:15, ], caption = "Prepared Data for Model 2")
+```
+
+## Statistical Modeling
+
+Given the count-nature of the data and the fact that occurrence of the events (issuing red cards) is independent, for both research questions, we used Poisson regression to model our analysis. To affirm our rationale, we calculated and compared the mean and variance of the red cards issued. Being extremely close, we decided to consider them equal. A potential regression model we could have used, is Quasi-Poisson. This would be applicable given the count-nature of the data; however, this dataset is not overdispersed, and the variance is _not_ a linear function of the mean. Therefore, does not call for this type of regression model.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+source("a3_analysis.R")
+m = mean(data$redCards)
+v = var(data$redCards)
+cat('Mean: ', m)
+cat('Variance: ', v)
+```
+     
+Our first model, `model1`, aimed to provide insight on the first research question, of _"Are soccer referees more likely to give red cards to dark skin toned players than light skin toned players?" This research question brings attention to issuing of red cards and a potential relationship to player skin tone. Therefore, we analyzed the total number of red cards issued to each player and the skin tone rating. The data transformation necessary for this model is described above in the _Data Preparation_ section.      
+      
+The total number of red cards per player, `totalRedCards`, is the response variable, and the average skin tone rating per player, `skinRating` is the independent variable. As reasoned above, we used Poisson regression.
+
+The second model, `model2`, tackled the second research question of _"Are soccer referees from countries high in skin-tone prejudice more likely to award red cards to dark skin toned players?"_ This research question not only called attention to the issuing of red cards and skin tone, but also referee country of origin. This prompted us to add the covariate of `bias`, which is our measure of country bias. We derived this measure from averaging the two variables that measure country prejudice in the original dataset, `meanIAT` and `meanExp`. `totalRedCards` remained the response variable, but instead of the total red cards per player (as in model1), it is the total red cards given out per referee country. This allowed us to see the prejudice measurement and red card distribution tendencies of each referee country.     
+
+## Results
+
+### Model 1
+
+Summary
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+summary(model1)
+```
+
+Graph
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+graph1
+```
+
+Based on model 1, we have come to a conclusion that soccer referees are more likely to red cards to dark skin toned players than light skin toned players. From the summary, we can see that Beta for skinRating is **0.17325**, which indicates a positive relationship between skin ratings and red cards. This relationship is significant because we have calculated its **p value (0.018717)** based on given **z value 2.081**. To evaluate the model, we have also displayed actual data on the graph. The model does not fit to the data very well because the data is showing more red cards when skin ratings are low and fewer red cards when skin ratings are high.
+
+### Model 2
+
+Summary
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+summary(model2)
+```
+
+Graph
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+graph2
+```
+
+Based on model 2, we have come to a conclusion that country prejudice has a very minimum effect on the probability of soccer players receiving red cards. This relationship is non-significant because based on **z value 0.209**, we have calculated that beta has **p value 0.417224**, which is greater than 0.05. The model itself is roughly accurate. As we can see from the graph report, there are slightly more dots on left side of the graph than righ side.
+
+## Discussion
+
+In this research, we tried to answer two questions: Are soccer referees more likely to give red cards to dark skin toned players than light skin toned players? 2. Are soccer referees from countries high in skin-tone prejudice more likely to award red cards to dark skin toned players? We adopted a poisson model and the result tells us that soccer referees more likely to give red cards to dark skin toned players than light skin toned players, but this effect is not resulted from the fact that a referee comes from a country with different levels of prejudices.
+
+While we believe that converting skin ratings into a continous variable would be the best fit for our model, we are not able to get the most accurate identification for a player based on his skin tone (as you may see from our data exploratory phase, we have found that the distributions for skin ratings completed by rater1 and rater2 are different). Furthermore, we are not able to verify the accuracy and validity of skin ratings reported by rater1 and rater2. Another limitation of this research is that when country bias is added as a covariate, our second model shows opposite relationships between skin ratings and red cards compare to results from first model. This may raise suspicions on our models.
+
+This research has shown us that there is some unfairness in soccer games. This is not acceptable for both players and soccer fans. Currently, referees have absolute rights giving cards to players. This decision can sometimes be subjective. To create the most fair game, we need a better way to judge misbehaviors of players in a game.

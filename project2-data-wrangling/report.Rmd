@@ -1,0 +1,119 @@
+---
+title: "Measuring Segregation"
+output: html_document
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+
+In _[Measures of Residential Segregation](https://www.census.gov/hhes/www/housing/resseg/pdf/app_b.pdf)_, 17 metrics of segregation are proposed and discussed by the U.S. Census Bureau. The purpose of this report is to explore and discuss 3 of these metrics using data of 14 US cities provided by the American Community Survey. 
+
+The 14 cities we test these metrics on include:
+
+1. Baltimore
+2. Charleston
+3. Chicago
+4. Columbus
+5. Dayton
+6. Denver
+7. Kansas City
+8. Memphis
+9. Milwaukee
+10. Oklahoma City
+11. Pittsburgh
+12. St. Louis
+13. Syracus
+14. Wichita
+
+# Metric Interpretation
+
+## 1. Isolation
+The isolation and interaction metric reflects the probability that a minority person shares a unit area with a majority person or with another minority person. Isolation is computed as the minority-weighted average of the minority proportion in each area, and is represented as an index that measures the extent to which minority members are exposed only to one another.
+
+Isolation is limited because it ranks geographic areas as least segregated where the racial/ethnic group typically lives with the highest percentages of whites and ranks areas as most segregated where the racial/ethnic group lives with the highest percentages of its own racial/ethnic group. This metric is therefore questionable - it gives its lowest “segregation” rankings to geographic areas where very few “minority” members reside compared to whites, again reinforcing the Census Bureau ranking system as providing a **white perspective** on segregation (Quinn 2004).
+
+Isolation is computed as:
+
+$\sum_{}^{} (x(i) / X) * (x(i) / t(i))$
+
+where x(i) is the minority population of area i, X is the sum of all x(i), and t(i) is the total population of area i.
+
+## 2. Correlation
+Correlation is another exposure index that is used as an adjustment of the isolation index. When there are more than two groups, the interaction and isolation indexes will not sum to 1.0 (one must add the interaction indexes for all other minority groups to the interaction and isolation indexes for the origi- nal minority group to obtain unity). The **correlation ratio** is computed to control this assymetry. 
+
+Correlation is computed as:
+
+$(I - P) / (1 - P)$
+
+where where I is the isolation index and P is the ratio of X to T (proportion of the metropolitan area’s popu- lation that is minority).
+
+## 3. Dissimilarity
+According to Benjamin Forest from Dartmouth, the **Index of Dissimilarity** is the most common metric used to define segregation in terms of evenness (2005). This measures the percentage of a group's population that would have to change residence in order for each neighborhood to have the same percentage of that group as the area overall. The dissimilarity index centered on concerns related to the observed unwillingness of numbers of urban white residents to remain in or move into racially mixed neighborhoods. This **index** ranges from 0.0 (complete integration) to 1.0 (complete segregation). 
+
+Limitations for the Index of dissimilarity includes the definition of _segregation_ in this context. We see that a city is determined segregated if their percentage of the census tract population exceeds the average. A suggestion may be to also incorporate a measure of dissimilarity of the non-minority population, as this formula only takes into account the minority population. This may give us more insight as to what is expected in order to really achieve even distribution to measure.
+
+Dissimilarity is computed as:
+
+$\sum_{}^{} |(y(i) / y) - (x(i) / x)| * 0.5$
+
+where x(i) is the minority population of area i, X is the sum of all x(i), y(i) is the minority population of area i, and Y is the sum of all y(i).
+
+
+## Metric Proposal
+I am proposing a segregation metric that calculates the percentage of non white in small areas of cities compared to entire population. This metric shows a relationship of segregation in the smaller areas of the city. _Small areas of a city_ is determined relative to the average size of an area in that city. If the resulting index is greater than 0.5, this means that the smaller areas of that city are *more segregated* than the entire city population considered.
+
+The limitation of this metric is that we can only see the significance of the results through it's relationship to 0.5 (or 50%), as the result shows more segregation in smaller areas if the result is greater than 0.5, while it shows less segregation if the result is less than 0.5. More computation is necessary to determine **how much more or less** the segregation factor is rather than just computing a difference.
+
+This metric can be calculated as:
+
+$\sum_{}^{} (x(a) / t(a)) / \sum_{}^{} (x(i) / t(i))$
+
+where x(a) is the minority population of area i where the area population is less than the mean area population, t(a) is the total population of area i where the area population is less than the mean area population, x(i) is the minority population of area i, and t(i) is the total population of area i.
+
+```{r cities, echo=FALSE, warning=FALSE, message=FALSE}
+source('analysis.R')
+library(knitr)
+
+```
+
+# Metric Demonstration
+
+All data for each city and the computations of the metrics mentioned above can be found in the following table
+
+```{r chart, echo=FALSE}
+kable(df, caption='Cities Data')
+```
+
+
+This bar plot demonstrates the segregation dissimilarities for each city. Dissimilarity is a metric used to measure segregation, where if the index is closer to 1.0 (rather than 0.0), the city is more segregated. We can then determine which cities are more segregated in this data in context to dissimilarity.
+
+```{r bar, echo=FALSE}
+diss.bar
+```
+
+
+The following scatterplot demonstrates the relationship between dissimilarities and isolations, with the color corresponding to correlations. This visualization shows that as dissimilarities increase, isolations and correlations for each city also increase, which shows a pattern of the segregation metrics corresponding with each other.
+
+```{r scatter, echo=FALSE}
+scatter1
+```
+
+
+The next scatterplot is compares two of the same metrics as the previous scatterplot, dissimilarity and correlations, but also incorporates a factor of the relationship of segregation in small cities to the total population. We can observe an interesting trend in this visualization where the segregation in smaller areas of the city is higher when the segregation of a city in context to dissimilarity is near the middle (an index of 0.5). Therefore, if a city is determined extremely segregated or not segregated, the segregation ratio of smaller areas is less according to the data.
+
+```{r custom, echo=FALSE}
+scatter2
+```
+
+
+# Sources
+
+U.S. Census Bureau - *Measures of Residential Segragation*: <https://www.census.gov/hhes/www/housing/resseg/pdf/app_b.pdf>
+
+Benjamin Forest - *Measures of Segregation and Isolation*: <http://www.dartmouth.edu/~segregation/IndicesofSegregation.pdf>
+
+Lois M. Quinn - *Assumptions and Limitations of the Census Bureau Methodology Ranking Racial and Ethnic Residential Segregation in Cities and Metro Areas*: <https://www.census.gov/hhes/www/housing/resseg/pdf/quinn.pdf>
+
