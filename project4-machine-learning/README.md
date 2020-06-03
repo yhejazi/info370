@@ -1,2 +1,2 @@
-# a4-starter
-Pover-T Test Jupyter Notebook shows the analysis of **4 models** that are used to predict poverty: Random Forest, K Nearest Neighbors, Decision Tree, and Logistic Regression. All models are compared based off of the accuracy score computed from the models.
+# Predicting Poverty
+This project explores multiple algorithms to predict household-level poverty status using surveys data from three developing countries, each with a different distribution of wealth. Pover-T Test Jupyter Notebook shows the analysis of **4 models** that are used to predict poverty: Random Forest, K Nearest Neighbors, Decision Tree, and Logistic Regression. All models are compared based off of the accuracy score computed from the models.
